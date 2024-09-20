@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class DocumentController extends Controller
@@ -13,10 +14,29 @@ class DocumentController extends Controller
      */
     public function index()
     {
+        $user = Auth::user();
+    
+        // Get permissions based on user permissions
+        $permissions = match ($user->permissions) {
+            2 => ["can_see", "can_create", "can_edit", "can_delete"],
+            1 => ["can_see", "can_create"],
+            0 => ["can_see"],
+            default => [],
+        };
+    
+        // Get all documents active
         $documents = Document::where('status', 1)->get();
-
+    
+        // If users permissions is 0, filter the documents by user id
+        if ($user->permissions === 0) {
+            $documents = $documents->filter(function($document) use ($user) {
+                return $document->user_id == $user->id;
+            });
+        }
+    
         return Inertia::render('Dashboard', [
-            'documents' => $documents
+            'documents' => $documents,
+            'permissions' => $permissions
         ]);
     }
 
