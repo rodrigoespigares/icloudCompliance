@@ -8,6 +8,8 @@ import FilterMenu from '@/Layouts/FilterMenu';
 import CreateDocumentModal from '@/Layouts/CreateDocumentModal';
 
 export default function Dashboard({ documents = [], permissions = [] }: DashboardProps) {
+
+    console.log(documents);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [appliedFilters, setAppliedFilters] = useState<{
         name?: string;
@@ -20,7 +22,8 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
     const [showCreateDocumentModal, setShowCreateDocumentModal] = useState(false);
 
     const filteredDocuments = useMemo(() => {
-        return documents.filter(document => {
+        const documentArray = Object.values(documents); // Convierte el objeto a un array
+        return documentArray.filter(document => {
             let matchesName = appliedFilters.name
                 ? document.name.toLowerCase().includes(appliedFilters.name.toLowerCase())
                 : true;
@@ -30,7 +33,7 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                 : true;
     
             const hasDateApprovedFilters = appliedFilters.dateApprovedStart || appliedFilters.dateApprovedEnd;
-
+    
             if (hasDateApprovedFilters && !document.date_approved) {
                 return false;
             }
@@ -143,7 +146,7 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
             <AuthenticatedLayout
                 header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Inicio</h2>}
             >
-                <Head title="Dashboard" />
+                <Head title="Inicio" />
                 
                 <div className="py-12">
                     <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
