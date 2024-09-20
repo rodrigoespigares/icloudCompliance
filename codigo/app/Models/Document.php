@@ -18,6 +18,7 @@ class Document extends Model
         'date_approved',
         'date_submitted',
         'url',
-        'status'
+        'status',
+        'user_id',
     ];
 }

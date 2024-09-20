@@ -16,11 +16,14 @@ return new class extends Migration
             $table->string('name',50);
             $table->string('description');
             $table->integer('priority');
-            $table->date('date_approved')->default(null);
+            $table->date('date_approved')->nullable();
             $table->date('date_submitted')->default(now());
             $table->string('url');
             $table->tinyInteger('status')->default(1);
+            $table->unsignedBigInteger('user_id');
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 
