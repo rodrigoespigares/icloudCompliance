@@ -8,6 +8,12 @@ import { Link, usePage } from '@inertiajs/react';
 export default function Authenticated({ header, children }: PropsWithChildren<{ header?: ReactNode }>) {
     const user = usePage().props.auth.user;
 
+    console.log(user.permissions);
+
+    let aceptados = [1, 2];
+
+    console.log();
+
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
     return (
@@ -26,9 +32,11 @@ export default function Authenticated({ header, children }: PropsWithChildren<{ 
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')}>
                                     Inicio
                                 </NavLink>
-                                <NavLink href={route('dashboard')} active={route().current('graficos')}>
-                                    Gráficos
-                                </NavLink>
+                                {aceptados.includes(user.permissions) && 
+                                    <NavLink href={route('dashboard')} active={route().current('graficos')}>
+                                        Gráficos
+                                    </NavLink>
+                                }
                             </div>
                         </div>
 
