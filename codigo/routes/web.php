@@ -10,6 +10,7 @@ use Inertia\Inertia;
 Route::get('/', [AuthenticatedSessionController::class, 'create'])->name('landing');
 
 Route::get('/home', [DocumentController::class, "index"])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/graficos', [DocumentController::class, "stats"])->middleware(['auth', 'verified'])->name('graficos');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
