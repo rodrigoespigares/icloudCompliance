@@ -39,6 +39,21 @@ class DocumentController extends Controller
             'permissions' => $permissions
         ]);
     }
+    public function indexJson()
+    {
+        $documents = Document::where('status', 1)
+            ->get(['id', 'name', 'date_submitted', 'date_approved', 'priority'])
+            ->map(function ($document) {
+                $document->detail = route('documents.show', $document->id);
+                return $document;
+            })
+            ->groupBy(function ($document) {
+                return $document->priority === 1 ? 'Prioridad Baja' :
+                    ($document->priority === 2 ? 'Prioridad Media' : 'Prioridad Alta');
+            });
+
+        return response()->json($documents);
+    }
 
     public function stats(){
         $user = Auth::user();
