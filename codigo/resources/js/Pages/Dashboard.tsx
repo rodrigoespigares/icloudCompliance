@@ -142,9 +142,7 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
         <>
             <FilterMenu isVisible={showFilterMenu} onFilterChange={handleFilterChange} handleShowFilterMenu={handleShowFilterMenu}/>
 
-            <AuthenticatedLayout
-                header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Inicio</h2>}
-            >
+            <AuthenticatedLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Inicio</h2>}>
                 <Head title="Inicio" />
                 
                 <div className="py-12">
