@@ -9,7 +9,6 @@ import CreateDocumentModal from '@/Layouts/CreateDocumentModal';
 
 export default function Dashboard({ documents = [], permissions = [] }: DashboardProps) {
 
-    console.log(documents);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [appliedFilters, setAppliedFilters] = useState<{
         name?: string;
