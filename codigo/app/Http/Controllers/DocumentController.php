@@ -40,6 +40,17 @@ class DocumentController extends Controller
         ]);
     }
 
+    public function stats(){
+        $user = Auth::user();
+    
+        // Get all documents active
+        $documents = Document::where('status', 1)->get();
+    
+        return Inertia::render('Graficos', [
+            'documents' => $documents
+        ]);
+    }
+
     /**
      * Show the form for creating a new resource.
      */
