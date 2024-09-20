@@ -55,6 +55,13 @@ class DocumentController extends Controller
         return response()->json($documents);
     }
 
+    public function showJson(String $id)
+    {
+        $document = Document::findOrFail($id);
+
+        return response()->json($document);
+    }
+
     public function stats(){
         $user = Auth::user();
     
