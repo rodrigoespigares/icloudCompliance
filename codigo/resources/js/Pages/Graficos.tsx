@@ -25,24 +25,48 @@ export default function Graficos({ documents = [], permissions = [] }: Dashboard
     };
 
     const lineDataCounts = Array(12).fill(0);
-    const currentMonth = new Date().getMonth();
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
 
     documents.forEach(doc => {
         if (doc.date_approved) {
             const approvedDate = new Date(doc.date_approved);
-            if (approvedDate.getFullYear() === new Date().getFullYear()) {
-                const month = approvedDate.getMonth();
+            const month = approvedDate.getMonth();
+            const year = approvedDate.getFullYear();
+            
+            if (year === currentYear - 1 && month > currentMonth) {
+                lineDataCounts[month] += 1;
+            } else if (year === currentYear && month <= currentMonth) {
                 lineDataCounts[month] += 1;
             }
         }
     });
 
+
+    var labels = [];
+    for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(currentYear, currentMonth - i);
+        labels.push(monthDate.getMonth() );
+    }
+    const orderLineDataCounts : number[] = [];
+
+    labels.map(label => {
+        orderLineDataCounts.push(lineDataCounts[label]);
+    });
+
+    labels = [];
+    for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(currentYear, currentMonth - i);
+        labels.push(monthDate.getMonth() + 1 + " / " + monthDate.getFullYear());
+    }
+
     const lineData = {
-        labels: Array.from({ length: 12 }, (_, i) => new Date(new Date().setMonth(currentMonth - i)).toLocaleString('default', { month: 'short' })).reverse(),
+        labels: labels.reverse(),
         datasets: [
             {
                 label: 'Documentos Aprobados',
-                data: lineDataCounts.reverse(),
+                data: orderLineDataCounts.reverse(),
                 borderColor: '#42A5F5',
                 backgroundColor: 'rgba(66, 165, 245, 0.2)',
                 fill: true,
