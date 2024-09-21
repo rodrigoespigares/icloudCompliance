@@ -32,7 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/documents', [DocumentController::class, 'documents']);
+    Route::get('/documents', [DocumentController::class, 'documents'])->name('documents.index');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
     Route::post('/documents/{id}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
@@ -47,7 +47,7 @@ Route::middleware('auth')->group(function () {
 
         $document = Document::findOrFail($id);
 
-        if ($document->user_id != Auth::user()->id) {
+        if ($document->user_id != Auth::user()->id && Auth::user()->permissions == 0) {
             abort(403, 'No tienes permisos para ver este documento');
         }
 
