@@ -1,15 +1,17 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
 import React, { useState, useEffect, FormEventHandler } from "react";
 import InputError from "@/Components/InputError";
+import { User } from "@/types";
 
 interface Document {
     id?: number;
     name: string;
     description: string;
     priority: number;
-    created_at?: string;
-    approved_at?: string;
+    date_submitted?: string;
+    date_approved?: string;
     documents?: File;
+    user_id: number;
 }
 
 interface CreateDocumentModalProps {
@@ -25,34 +27,56 @@ export default function CreateDocumentModal({
     onClose,
     onSave,
 }: CreateDocumentModalProps) {
+    const csrfToken = document
+    .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+    ?.getAttribute('content');
+
+    const headers: HeadersInit = csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {};
+
     const [data, setData] = useState({
         name: "",
         description: "",
         priority: 1,
-        created_at: "",
-        approved_at: "",
+        date_submitted: "",
+        date_approved: "",
+        user_id: 1,
     });
 
     const [file, setFile] = useState<File | null>(null);
     const [errors, setErrors] = useState<any>({});
     const [processing, setProcessing] = useState(false);
+    const [userList, setUserList] = useState<User[]>([]);
 
+
+    useEffect(() => {
+        fetch("/users",{
+            method: "GET",
+            headers
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            setUserList(data);
+        }
+        )
+    }, []);
     useEffect(() => {
         if (documents) {
             setData({
                 name: documents.name || "",
                 description: documents.description || "",
                 priority: documents.priority || 1,
-                created_at: documents.created_at || "",
-                approved_at: documents.approved_at || "",
+                date_submitted: documents.date_submitted || "",
+                date_approved: documents.date_approved || "",
+                user_id: documents.user_id || 1,
             });
         } else {
             setData({
                 name: "",
                 description: "",
                 priority: 1,
-                created_at: "",
-                approved_at: "",
+                date_submitted: "",
+                date_approved: "",
+                user_id: 1,
             });
         }
     }, [documents]);
@@ -83,21 +107,45 @@ export default function CreateDocumentModal({
         formData.append("name", data.name);
         formData.append("description", data.description);
         formData.append("priority", String(data.priority));
+        formData.append("user_id", String(data.user_id));
     
         if (file) {
             formData.append("document", file);
-        } else {
-            setErrors({ documents: "No se ha seleccionado ningún archivo." });
-            setProcessing(false);
+        }
+    
+        if (documents) {
+            formData.append("date_submitted", data.date_submitted); 
+            formData.append("date_approved", data.date_approved);
+            
+            fetch("/documents/" + documents.id, {
+                method: "POST",
+                body: formData,
+                headers,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        console.log(response);
+                        return response.json().then((errorData) => {
+                            console.log(errorData);
+                        });
+                    } else {
+                        response.json().then((data) => {
+                            onSave();
+                            onClose();
+                        });
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error en la solicitud:", error);
+                })
+                .finally(() => {
+                    setProcessing(false);
+                });
+    
             return;
         }
-
-        const csrfToken = document
-        .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-        ?.getAttribute('content');
-
-        const headers: HeadersInit = csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {};
     
+        // Código para crear un nuevo documento
         fetch("/documents", {
             method: "POST",
             body: formData,
@@ -190,49 +238,69 @@ export default function CreateDocumentModal({
                             <>
                                 <div className="mb-4">
                                     <label
-                                        htmlFor="created_at"
+                                        htmlFor="date_submitted"
                                         className="block mb-1"
                                     >
                                         Fecha de Creación:
                                     </label>
                                     <input
-                                        type="text"
-                                        id="created_at"
-                                        name="created_at"
-                                        value={data.created_at}
-                                        readOnly
+                                        type="date"
+                                        id="date_submitted"
+                                        name="date_submitted"
+                                        value={data.date_submitted ? new Date(data.date_submitted).toISOString().substring(0, 10) : ""}
+                                        onChange={handleInputChange}
                                         className="w-full p-2 rounded bg-gray-100 text-gray-700"
                                     />
                                     <InputError
-                                        message={errors.created_at}
+                                        message={errors.date_submitted}
                                         className="mt-2"
                                     />
                                 </div>
 
                                 <div className="mb-4">
                                     <label
-                                        htmlFor="approved_at"
+                                        htmlFor="date_approved"
                                         className="block mb-1"
                                     >
                                         Fecha de Aprobación:
                                     </label>
                                     <input
-                                        type="text"
-                                        id="approved_at"
-                                        name="approved_at"
-                                        value={
-                                            data.approved_at || "No Aprobado"
-                                        }
-                                        readOnly
+                                        type="date"
+                                        id="date_approved"
+                                        name="date_approved"
+                                        value={data.date_approved ? new Date(data.date_approved).toISOString().substring(0, 10) : ""}
+                                        onChange={handleInputChange}
                                         className="w-full p-2 rounded bg-gray-100 text-gray-700"
                                     />
                                     <InputError
-                                        message={errors.approved_at}
+                                        message={errors.date_approved}
                                         className="mt-2"
                                     />
                                 </div>
                             </>
                         )}
+                        <div className="mb-4">
+                            <label htmlFor="user_id" className="block mb-1">
+                                Usuario asignado:
+                            </label>
+                            <select
+                                id="user_id"
+                                name="user_id"
+                                value={data.user_id}
+                                onChange={handleInputChange}
+                                className="w-full p-2 rounded text-primary"
+                            >
+                                {userList.map((user) => (
+                                    <option value={user.id} key={user.id}>
+                                        {user.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError
+                                message={errors.user_id}
+                                className="mt-2"
+                            />
+                        </div>
 
                         <div>
                             <label
