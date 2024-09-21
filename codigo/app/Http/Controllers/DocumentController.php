@@ -76,7 +76,7 @@ class DocumentController extends Controller
                 'user_id' => 'required|integer|exists:users,id',
             ]);
     
-            $filePath = $request->file('document')->store('documents'); 
+            $filePath = $request->file('document')->store('documents', 'public'); 
     
            
     

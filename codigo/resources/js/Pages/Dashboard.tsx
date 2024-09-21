@@ -132,7 +132,7 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                 Cell: ({ row }) => (
                     <div className="flex space-x-4">
                         {permissions.includes('can_see') && (
-                            <a href={row.original.url} className="text-primary hover:underline text-lg" target="_blank" rel="noopener noreferrer">
+                            <a href={route('view-pdf', row.original.id)} className="text-primary hover:underline text-lg" target="_blank" rel="noopener noreferrer">
                                 <Icon icon="bx:show" />
                             </a>
                         )}
