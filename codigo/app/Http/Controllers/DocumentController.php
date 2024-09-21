@@ -125,7 +125,35 @@ class DocumentController extends Controller
      */
     public function update(Request $request, String $id)
     {
-        //
+        $validatedData = $request->validate([
+            'name' => 'string|max:50|min:1',
+            'description' => 'string|max:255|min:1',
+            'priority' => 'integer|min:1|max:3',
+            'document' => 'nullable|file|mimes:pdf,doc,docx',
+            'user_id' => 'required|integer|exists:users,id',
+            'date_submitted' => 'required|date',
+            'date_approved' => 'nullable|date',
+        ]);
+        
+
+
+        $document = Document::findOrFail($id);
+
+        
+        if($request->hasFile('document')){
+            $filePath = $request->file('document')->store('documents'); 
+            $document->url = $filePath;
+        }
+
+        $document->name = $validatedData['name'];
+        $document->description = $validatedData['description'];
+        $document->priority = (int)$validatedData['priority'];
+        $document->user_id = (int)$validatedData['user_id'];
+        $document->date_submitted = $validatedData['date_submitted'];
+        $document->date_approved = $validatedData['date_approved'];
+        $document->save();
+
+        return response()->json($document);
     }
 
     /**
