@@ -25,10 +25,10 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
     }>({});
     const [showCreateDocumentModal, setShowCreateDocumentModal] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-    const [documentList, setDocumentList] = useState<Document[]>(documents); // Estado para documentos
+    const [documentList, setDocumentList] = useState<Document[]>(documents);
 
     const filteredDocuments = useMemo(() => {
-        const documentArray = Object.values(documents);
+        const documentArray = Object.values(documentList);
         return documentArray.filter(document => {
             let matchesName = appliedFilters.name
                 ? document.name.toLowerCase().includes(appliedFilters.name.toLowerCase())
@@ -148,6 +148,14 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                                 className="text-red-500 hover:underline text-lg"
                             >
                                 <Icon icon="bx:trash" />
+                            </button>
+                        )}
+                        {permissions.includes('can_approve') && (
+                            <button
+                                onClick={() => handleDelete(row.original.id)}
+                                className="text-green-500 hover:underline text-lg"
+                            >
+                                <Icon icon="majesticons:check" />
                             </button>
                         )}
                     </div>
