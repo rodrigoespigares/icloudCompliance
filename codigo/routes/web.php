@@ -47,13 +47,17 @@ Route::middleware('auth')->group(function () {
 
         $document = Document::findOrFail($id);
 
-        if ($document->user_id != Auth::user()->id && Auth::user()->permissions == 0) {
-            abort(403, 'No tienes permisos para ver este documento');
+        if(Auth::user()->permissions == 0){
+            if ($document->user_id != Auth::user()->id) {
+                abort(404, 'Archivo no encontrado');
+            }
         }
 
         $filePath =  $document->url;
         
         $file = explode('/', $filePath);
+
+        var_dump($file[count($file) - 1]);
     
         if (Storage::disk('private')->exists($filePath)) {
             $fileContent = Storage::disk('private')->get($filePath);
