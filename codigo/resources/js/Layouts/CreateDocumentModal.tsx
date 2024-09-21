@@ -145,7 +145,7 @@ export default function CreateDocumentModal({
             return;
         }
     
-        // Código para crear un nuevo documento
+
         fetch("/documents", {
             method: "POST",
             body: formData,
@@ -162,9 +162,6 @@ export default function CreateDocumentModal({
                         onClose();
                     });
                 }
-            })
-            .catch((error) => {
-                console.error("Error en la solicitud:", error);
             })
             .finally(() => {
                 setProcessing(false);

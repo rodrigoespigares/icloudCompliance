@@ -146,6 +146,14 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        "name" => "nombre",
+        "description" => "descripción",
+        "priority" => "prioridad",
+        "document" => "archivo",
+        "user_id" => "usuario",
+        "date_submitted" => "fecha de envío",
+        "date_approved" => "fecha de aprobación",
+    ],
 
 ];

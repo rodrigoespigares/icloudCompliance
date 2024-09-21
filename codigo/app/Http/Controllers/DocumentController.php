@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use Illuminate\Validation\ValidationException;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -95,29 +97,37 @@ class DocumentController extends Controller
      */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:50',
-            'description' => 'required|string|max:255',
-            'priority' => 'required|integer|min:1|max:3',
-            'document' => 'required|file|mimes:pdf,doc,docx',
-            'user_id' => 'required|integer|exists:users,id',
-        ]);
-
-        $filePath = $request->file('document')->store('documents'); 
-
-       
-
-        $document = Document::create([
-            'name' => $validatedData['name'],
-            'description' => $validatedData['description'],
-            'priority' => (int)$validatedData['priority'],
-            'date_approved' => null,
-            'date_submitted' => now(),
-            'url' => $filePath, 
-            'user_id' => (int)$validatedData['user_id'],
-        ]);
-
-        return response()->json($document, 201);
+        try{
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:50',
+                'description' => 'required|string|max:255',
+                'priority' => 'required|integer|min:1|max:3',
+                'document' => 'required|file|mimes:pdf,doc,docx',
+                'user_id' => 'required|integer|exists:users,id',
+            ]);
+    
+            $filePath = $request->file('document')->store('documents'); 
+    
+           
+    
+            $document = Document::create([
+                'name' => $validatedData['name'],
+                'description' => $validatedData['description'],
+                'priority' => (int)$validatedData['priority'],
+                'date_approved' => null,
+                'date_submitted' => now(),
+                'url' => $filePath, 
+                'user_id' => (int)$validatedData['user_id'],
+            ]);
+    
+            return response()->json($document, 201);
+        }catch (ValidationException $e){
+            return response()->json([
+                'errors' => $e->errors()
+            ], 422);
+        }catch (Exception $e){
+            return response()->json($e->getMessage(), 500);
+        }
     }
 
     /**
