@@ -159,8 +159,24 @@ class DocumentController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Document $document)
+    public function destroy(String $id)
     {
-        //
+        $document = Document::findOrFail($id);
+        $document->status = 0;
+        $document->save();
+        return response()->json($document);
+    }
+
+
+    /**
+     * Approve the specified resource in storage.
+     */
+    public function approve(String $id)
+    {
+        $document = Document::findOrFail($id);
+        $document->status = 1;
+        $document->date_approved = now();
+        $document->save();
+        return response()->json($document);
     }
 }
