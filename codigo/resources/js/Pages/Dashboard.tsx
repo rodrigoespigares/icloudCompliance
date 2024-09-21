@@ -8,13 +8,19 @@ import FilterMenu from '@/Layouts/FilterMenu';
 import CreateDocumentModal from '@/Layouts/CreateDocumentModal';
 
 export default function Dashboard({ documents = [], permissions = [] }: DashboardProps) {
+    const csrfToken = document
+    .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+    ?.getAttribute('content');
 
+    const headers: HeadersInit = csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {};
     useEffect(() => {
         getDocuments();
     }, []);
 
     
     const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showApproveModal, setShowApproveModal] = useState(false);
     const [appliedFilters, setAppliedFilters] = useState<{
         name?: string;
         priority?: number;
@@ -69,11 +75,7 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
     };
 
     const getDocuments = () => {
-        const csrfToken = document
-        .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-        ?.getAttribute('content');
-
-        const headers: HeadersInit = csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {};
+        
         fetch("/documents", {
             method: "GET",
             headers
@@ -144,15 +146,15 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                         )}
                         {permissions.includes('can_delete') && (
                             <button
-                                onClick={() => handleDelete(row.original.id)}
+                                onClick={() => handleDelete(row.original)}
                                 className="text-red-500 hover:underline text-lg"
                             >
                                 <Icon icon="bx:trash" />
                             </button>
                         )}
-                        {permissions.includes('can_approve') && (
+                        {permissions.includes('can_approve') && row.original.date_approved === null && (
                             <button
-                                onClick={() => handleDelete(row.original.id)}
+                                onClick={() => handleApprove(row.original)}
                                 className="text-green-500 hover:underline text-lg"
                             >
                                 <Icon icon="majesticons:check" />
@@ -167,9 +169,14 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
 
     const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: filteredDocuments });
 
-    const handleDelete = (id: number) => {
-        console.log('Eliminar documento con ID:', id);
-        // Aquí puedes agregar la lógica para eliminar un documento
+    const handleDelete = (document: Document) => {
+        setSelectedDocument(document);
+        setShowDeleteModal(true);
+    };
+
+    const handleApprove = (document: Document) => {
+        setSelectedDocument(document);
+        setShowApproveModal(true);
     };
 
     const handleShowFilterMenu = () => {
@@ -184,6 +191,48 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
     const handleCreate = () => {
         setSelectedDocument(null); 
         setShowCreateDocumentModal(true); 
+    };
+
+    const approveDocument = (id: number) => {
+        fetch(`/documents/${id}`, {
+            method: "PATCH",
+            headers
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((errorData) => {
+                        console.log(errorData);
+                    });
+                } else {
+                    response.json().then((data) => {
+                        getDocuments();
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Error al aprobar el documento:", error);
+            });
+    };
+
+    const removeDocument = (id: number) => {
+        fetch(`/documents/${id}`, {
+            method: "DELETE",
+            headers
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((errorData) => {
+                        console.log(errorData);
+                    });
+                } else {
+                    response.json().then((data) => {
+                        getDocuments();
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Error al eliminar el documento:", error);
+            });
     };
 
     return (
@@ -254,6 +303,31 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                     }}
                 />
             )}
+
+            {showDeleteModal && selectedDocument && (
+                <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50' onClick={() => setShowDeleteModal(false)}>
+                    <div className='w-[30vw] bg-white py-2 px-4 transition-opacity duration-300 ease-in-out rounded-lg'>
+                        <h2 className='mb-4'>¿Estás seguro de que quieres eliminar este documento?</h2>
+                        <div className='flex justify-evenly items-center'>
+                            <button className='w-24 text-white rounded-md bg-red-500' onClick={() => setShowDeleteModal(false)}>No</button>
+                            <button className='w-24 text-white rounded-md bg-green-600' onClick={() => removeDocument(selectedDocument.id)}>Sí</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showApproveModal && selectedDocument && (
+                <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50' onClick={() => setShowApproveModal(false)}>
+                    <div className='w-[30vw] bg-white py-2 px-4 transition-opacity duration-300 ease-in-out rounded-lg'>
+                        <h2 className='mb-4'>¿Estás seguro de que quieres aprobar este documento?</h2>
+                        <div className='flex justify-evenly items-center'>
+                            <button className='w-24 text-white rounded-md bg-red-500' onClick={() => setShowApproveModal(false)}>No</button>
+                            <button className='w-24 text-white rounded-md bg-green-600' onClick={() => approveDocument(selectedDocument.id)}>Sí</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </>
     );
 }
