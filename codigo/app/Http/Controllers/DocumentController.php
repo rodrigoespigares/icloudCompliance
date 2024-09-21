@@ -55,6 +55,13 @@ class DocumentController extends Controller
         return response()->json($documents);
     }
 
+    public function documents()
+    {
+        $documents = Document::where('status', 1)->get();
+    
+        return response()->json($documents);
+    }
+
     public function showJson(String $id)
     {
         $document = Document::findOrFail($id);
@@ -86,12 +93,28 @@ class DocumentController extends Controller
      */
     public function store(Request $request)
     {
-        $validate = $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:50',
             'description' => 'required|string|max:255',
             'priority' => 'required|integer|min:1|max:3',
+            'document' => 'required|file|mimes:pdf,doc,docx',
         ]);
 
+        $filePath = $request->file('document')->store('documents'); 
+
+       
+
+        $document = Document::create([
+            'name' => $validatedData['name'],
+            'description' => $validatedData['description'],
+            'priority' => (int)$validatedData['priority'],
+            'date_approved' => null,
+            'date_submitted' => now(),
+            'url' => $filePath, 
+            'user_id' => Auth::user()->id,
+        ]);
+
+        return response()->json($document, 201);
     }
 
     /**
