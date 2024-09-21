@@ -29,7 +29,6 @@ export default function Graficos({ documents = [], permissions = [] }: Dashboard
 
     documents.forEach(doc => {
         if (doc.date_approved) {
-            console.log(doc)
             const approvedDate = new Date(doc.date_approved);
             if (approvedDate.getFullYear() === new Date().getFullYear()) {
                 const month = approvedDate.getMonth();

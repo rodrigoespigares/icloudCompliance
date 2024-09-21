@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTable, Column } from 'react-table';
 import { Document, DashboardProps } from '@/types';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -9,6 +9,11 @@ import CreateDocumentModal from '@/Layouts/CreateDocumentModal';
 
 export default function Dashboard({ documents = [], permissions = [] }: DashboardProps) {
 
+    useEffect(() => {
+        getDocuments();
+    }, []);
+
+    
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [appliedFilters, setAppliedFilters] = useState<{
         name?: string;
@@ -19,52 +24,73 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
         dateCreatedEnd?: string;
     }>({});
     const [showCreateDocumentModal, setShowCreateDocumentModal] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+    const [documentList, setDocumentList] = useState<Document[]>(documents); // Estado para documentos
 
     const filteredDocuments = useMemo(() => {
-        const documentArray = Object.values(documents); // Convierte el objeto a un array
+        const documentArray = Object.values(documents);
         return documentArray.filter(document => {
             let matchesName = appliedFilters.name
                 ? document.name.toLowerCase().includes(appliedFilters.name.toLowerCase())
                 : true;
-    
+
             let matchesPriority = appliedFilters.priority !== undefined
                 ? document.priority === appliedFilters.priority
                 : true;
-    
+
             const hasDateApprovedFilters = appliedFilters.dateApprovedStart || appliedFilters.dateApprovedEnd;
-    
+
             if (hasDateApprovedFilters && !document.date_approved) {
                 return false;
             }
-    
+
             let matchesDateApproved = appliedFilters.dateApprovedStart
                 ? document.date_approved && new Date(document.date_approved) >= new Date(appliedFilters.dateApprovedStart)
                 : true;
-    
+
             let matchesDateApprovedEnd = appliedFilters.dateApprovedEnd
                 ? document.date_approved && new Date(document.date_approved) <= new Date(appliedFilters.dateApprovedEnd)
                 : true;
-    
+
             let matchesDateCreatedStart = appliedFilters.dateCreatedStart && document.date_submitted
                 ? new Date(document.date_submitted) >= new Date(appliedFilters.dateCreatedStart)
                 : true;
-    
+
             let matchesDateCreatedEnd = appliedFilters.dateCreatedEnd && document.date_submitted
                 ? new Date(document.date_submitted) <= new Date(appliedFilters.dateCreatedEnd)
                 : true;
-    
+
             return matchesName && matchesPriority && matchesDateApproved && matchesDateApprovedEnd && matchesDateCreatedStart && matchesDateCreatedEnd;
         });
-    }, [documents, appliedFilters]);
+    }, [documentList, appliedFilters]);
 
     const handleFilterChange = (filters: { name?: string; priority?: number }) => {
         setAppliedFilters(filters);
     };
 
+    const getDocuments = () => {
+        const csrfToken = document
+        .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+        ?.getAttribute('content');
+
+        const headers: HeadersInit = csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {};
+        fetch("/documents", {
+            method: "GET",
+            headers
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                setDocumentList(data); 
+            })
+            .catch((error) => {
+                console.error("Error al obtener los documentos:", error);
+            });
+    };
+
     const columns: Column<Document>[] = useMemo(
         () => [
             {
-                Header: 'Nombre',
+                Header: 'Nombre del Documento',
                 accessor: 'name',
             },
             {
@@ -109,9 +135,12 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                             </a>
                         )}
                         {permissions.includes('can_edit') && (
-                            <a href={`/documents/${row.original.id}/edit`} className="text-blue-500 hover:underline text-lg">
+                            <button
+                                onClick={() => handleEdit(row.original)}
+                                className="text-blue-500 hover:underline text-lg"
+                            >
                                 <Icon icon="bx:edit" />
-                            </a>
+                            </button>
                         )}
                         {permissions.includes('can_delete') && (
                             <button
@@ -132,15 +161,26 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
 
     const handleDelete = (id: number) => {
         console.log('Eliminar documento con ID:', id);
+        // Aquí puedes agregar la lógica para eliminar un documento
     };
 
     const handleShowFilterMenu = () => {
         setShowFilterMenu(!showFilterMenu);
     };
 
+    const handleEdit = (document: Document) => {
+        setSelectedDocument(document); 
+        setShowCreateDocumentModal(true); 
+    };
+
+    const handleCreate = () => {
+        setSelectedDocument(null); 
+        setShowCreateDocumentModal(true); 
+    };
+
     return (
         <>
-            <FilterMenu isVisible={showFilterMenu} onFilterChange={handleFilterChange} handleShowFilterMenu={handleShowFilterMenu}/>
+            <FilterMenu isVisible={showFilterMenu} onFilterChange={handleFilterChange} handleShowFilterMenu={handleShowFilterMenu} />
 
             <AuthenticatedLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Inicio</h2>}>
                 <Head title="Inicio" />
@@ -148,10 +188,12 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                 <div className="py-12">
                     <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                         <div className='flex justify-end w-full my-2 gap-2'>
-                            {permissions.includes('can_create') && <button onClick={() => setShowCreateDocumentModal(true)} className="bg-blue-500 rounded-lg py-2 px-4 text-white hover:bg-blue-600 transition-colors">
-                                Crear Documento
-                            </button>}
-                            <button onClick={() => handleShowFilterMenu()} className="bg-blue-500 rounded-lg py-2 px-4 text-white hover:bg-blue-600 transition-colors">
+                            {permissions.includes('can_create') && (
+                                <button onClick={handleCreate} className="bg-blue-500 rounded-lg py-2 px-4 text-white hover:bg-blue-600 transition-colors">
+                                    Crear Documento
+                                </button>
+                            )}
+                            <button onClick={handleShowFilterMenu} className="bg-blue-500 rounded-lg py-2 px-4 text-white hover:bg-blue-600 transition-colors">
                                 Filtros
                             </button>
                         </div>
@@ -193,7 +235,17 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                 </div>
             </AuthenticatedLayout>
 
-            {showCreateDocumentModal && <CreateDocumentModal isVisible={showCreateDocumentModal} onClose={() => setShowCreateDocumentModal(false)} />}
+            {showCreateDocumentModal && (
+                <CreateDocumentModal
+                    isVisible={showCreateDocumentModal}
+                    onClose={() => setShowCreateDocumentModal(false)}
+                    documents={selectedDocument}
+                    onSave={() => {
+                        getDocuments();
+                        setShowCreateDocumentModal(false);
+                    }}
+                />
+            )}
         </>
     );
 }

@@ -57,7 +57,17 @@ class DocumentController extends Controller
 
     public function documents()
     {
+        $user = Auth::user();
+    
+        // Get all documents active
         $documents = Document::where('status', 1)->get();
+    
+        // If users permissions is 0, filter the documents by user id
+        if ($user->permissions === 0) {
+            $documents = $documents->filter(function($document) use ($user) {
+                return $document->user_id == $user->id;
+            });
+        }
     
         return response()->json($documents);
     }
