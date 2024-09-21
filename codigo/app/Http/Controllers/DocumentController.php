@@ -91,14 +91,6 @@ class DocumentController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -108,6 +100,7 @@ class DocumentController extends Controller
             'description' => 'required|string|max:255',
             'priority' => 'required|integer|min:1|max:3',
             'document' => 'required|file|mimes:pdf,doc,docx',
+            'user_id' => 'required|integer|exists:users,id',
         ]);
 
         $filePath = $request->file('document')->store('documents'); 
@@ -121,32 +114,16 @@ class DocumentController extends Controller
             'date_approved' => null,
             'date_submitted' => now(),
             'url' => $filePath, 
-            'user_id' => Auth::user()->id,
+            'user_id' => (int)$validatedData['user_id'],
         ]);
 
         return response()->json($document, 201);
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(Document $document)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Document $document)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Document $document)
+    public function update(Request $request, String $id)
     {
         //
     }
