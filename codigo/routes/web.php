@@ -3,13 +3,27 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
+
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [AuthenticatedSessionController::class, 'create'])->name('landing');
 
-Route::get('/home', [DocumentController::class, "index"])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/home', function (){
+    $user = Auth::user();
+    $permissions = match ($user->permissions) {
+        2 => ["can_see", "can_create", "can_edit", "can_delete", "can_approve"],
+        1 => ["can_see", "can_create", "can_approve"],
+        0 => ["can_see"],
+        default => [],
+    };
+    return Inertia::render('Dashboard', [
+        'permissions' => $permissions
+    ]);
+})->middleware(['auth', 'verified'])->name('dashboard');
 Route::get('/graficos', [DocumentController::class, "stats"])->middleware(['auth', 'verified'])->name('graficos');
 
 Route::middleware('auth')->group(function () {
@@ -19,7 +33,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/documents', [DocumentController::class, 'documents']);
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
-    Route::patch('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
+    Route::post('/documents/{id}', [DocumentController::class, 'update'])->name('documents.update');
+
+
+
+    Route::get('/users', [UserController::class, 'index']);
 });
 
 require __DIR__.'/auth.php';
