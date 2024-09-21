@@ -15,6 +15,7 @@ export interface Document {
     date_submitted: string;
     url: string;
     status: number;
+    user_id: number;
 }
 
 export interface DashboardProps {
