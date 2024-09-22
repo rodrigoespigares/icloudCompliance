@@ -38,7 +38,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/documents', [DocumentController::class, 'documents'])->name('documents.index');
     Route::get('documents/relevance', [DocumentController::class, 'index'])->name('documents.Json'); 
     Route::get('documents/relevance/{id}', [DocumentController::class, 'show'])->name('documents.show');
     
