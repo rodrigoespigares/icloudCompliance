@@ -10,59 +10,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
-/**
- * @test DocumentController GET /documents returns all documents with status 1 and group by priority
- */
-test('indexJson returns grouped documents by priority', function () {
-
-    $doc1 = Document::factory()->create([
-        'status' => 1,
-        'priority' => 1,
-    ]);
-    
-    $doc2 = Document::factory()->create([
-        'status' => 1,
-        'priority' => 2,
-    ]);
-    
-    $doc3 = Document::factory()->create([
-        'status' => 1,
-        'priority' => 3,
-    ]);
-
-    $response = $this->getJson(route('documents.Json'));
-
-    $response->assertStatus(200)
-        ->assertJsonStructure([
-            'Prioridad Baja' => [
-                '*' => ['id', 'name', 'date_submitted', 'date_approved', 'priority', 'detail']
-            ],
-            'Prioridad Media' => [
-                '*' => ['id', 'name', 'date_submitted', 'date_approved', 'priority', 'detail']
-            ],
-            'Prioridad Alta' => [
-                '*' => ['id', 'name', 'date_submitted', 'date_approved', 'priority', 'detail']
-            ],
-        ])
-        ->assertJsonCount(1, 'Prioridad Baja')
-        ->assertJsonCount(1, 'Prioridad Media')
-        ->assertJsonCount(1, 'Prioridad Alta');
-
-    $response->assertJsonFragment([
-        'id' => $doc1->id,
-        'detail' => route('documents.show', $doc1->id),
-    ]);
-    $response->assertJsonFragment([
-        'id' => $doc2->id,
-        'detail' => route('documents.show', $doc2->id),
-    ]);
-    $response->assertJsonFragment([
-        'id' => $doc3->id,
-        'detail' => route('documents.show', $doc3->id),
-    ]);
-});
-
-
 
 
 /**
@@ -77,7 +24,7 @@ test('documents returns all active documents for users with permissions greater 
 
     Auth::login($user);
 
-    $response = $this->getJson(route('documents.index'));
+    $response = $this->getJson(route('documents.Json'));
 
     $response->assertStatus(200)
         ->assertJsonFragment(['id' => $document1->id])
@@ -102,7 +49,7 @@ test('documents returns only user documents when permissions is 0', function () 
 
     Auth::login($user);
 
-    $response = $this->getJson(route('documents.index'));
+    $response = $this->getJson(route('documents.Json'));
 
     $response->assertStatus(200)
         ->assertJsonFragment(['id' => $userDocument->id])
@@ -114,6 +61,8 @@ test('documents returns only user documents when permissions is 0', function () 
  * @test DocumentController GET /documents/{id} returns the correct document
  */
 test('showJson returns the correct document', function () {
+    $user = User::factory()->create(['permissions' => 1]);
+    Auth::login($user);
 
     $document = Document::factory()->create();
 
@@ -131,6 +80,9 @@ test('showJson returns the correct document', function () {
  * @test DocumentController GET /documents/{id} returns 404 if document not found
  */
 test('showJson returns 404 if document not found', function () {
+    $user = User::factory()->create(['permissions' => 1]);
+    Auth::login($user);
+
     $response = $this->getJson(route('documents.show', 999));
 
     $response->assertStatus(404);
@@ -165,7 +117,7 @@ test('showJson returns 404 if document not found', function () {
 test('store creates a document and returns it', function () {
     Storage::fake('public');
 
-    $user = User::factory()->create();
+    $user = User::factory()->create(['permissions' => 1]);
     Auth::login($user);
 
     $data = [
@@ -193,7 +145,7 @@ test('store creates a document and returns it', function () {
  * @test DocumentController POST /documents returns validation errors for invalid data
  */
 test('store returns validation errors for invalid data', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['permissions' => 1]);
     Auth::login($user);
 
     $data = [
@@ -214,7 +166,7 @@ test('store returns validation errors for invalid data', function () {
  */
 test('update returns validation errors for invalid data', function () {
     $document = Document::factory()->create();
-    $user = User::factory()->create();
+    $user = User::factory()->create(['permissions' => 1]);
     Auth::login($user);
 
     $data = [
@@ -236,7 +188,7 @@ test('update returns validation errors for invalid data', function () {
  */
 test('destroy marks the document as deleted', function () {
     $document = Document::factory()->create(['status' => 1]);
-    $user = User::factory()->create();
+    $user = User::factory()->create(['permissions' => 1]);
     Auth::login($user);
 
     $response = $this->delete(route('documents.destroy', $document->id));
@@ -255,8 +207,8 @@ test('destroy marks the document as deleted', function () {
  */
 test('approve sets the document status to approved', function () {
     $document = Document::factory()->create(['status' => 0]); 
-    $user = User::factory()->create();
-    Auth::login($user); 
+    $user = User::factory()->create(['permissions' => 1]);
+    Auth::login($user);
 
     $response = $this->patch(route('documents.approve', $document->id));
 
