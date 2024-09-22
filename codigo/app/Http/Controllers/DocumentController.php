@@ -47,14 +47,14 @@ class DocumentController extends Controller
     }
 
     public function show(String $id)
-{
-    $document = Document::with('user')->findOrFail($id);
+    {
+        $document = Document::with('user')->findOrFail($id);
 
-    $document->username = $document->user->name;
-    unset($document->user_id);
+        $document->username = $document->user->name;
+        unset($document->user_id);
 
-    return response()->json($document);
-}
+        return response()->json($document);
+    }
 
     public function stats(){
         // Get all documents active
@@ -118,17 +118,13 @@ class DocumentController extends Controller
                 'date_submitted' => 'required|date',
                 'date_approved' => 'nullable|date',
             ]);
-            
-    
-    
+
             $document = Document::findOrFail($id);
-    
-            
+                
             if($request->hasFile('document')){
                 $filePath = $request->file('document')->store('documents'); 
                 $document->url = $filePath;
             }
-    
             $document->name = $validatedData['name'];
             $document->description = $validatedData['description'];
             $document->priority = (int)$validatedData['priority'];
