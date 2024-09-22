@@ -16,6 +16,8 @@ export interface Document {
     url: string;
     status: number;
     user_id: number;
+    detail?: string;
+    username?: string;
 }
 
 export interface DashboardProps {
