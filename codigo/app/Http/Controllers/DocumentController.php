@@ -8,48 +8,53 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class DocumentController extends Controller
 {
-    public function indexJson()
+    public function index()
     {
+        $user = Auth::user();
+
         $documents = Document::where('status', 1)
-            ->get(['id', 'name', 'date_submitted', 'date_approved', 'priority'])
+            ->get(['id', 'name', 'date_submitted', 'date_approved', 'priority', 'user_id'])
             ->map(function ($document) {
                 $document->detail = route('documents.show', $document->id);
                 return $document;
             })
             ->groupBy(function ($document) {
-                return $document->priority === 1 ? 'Prioridad Baja' :
-                    ($document->priority === 2 ? 'Prioridad Media' : 'Prioridad Alta');
+                return $document->priority;
             });
 
-        return response()->json($documents);
-    }
-
-    public function documents()
-    {
-        $user = Auth::user();
-    
-        // Get all documents active
-        $documents = Document::where('status', 1)->get();
-    
-        // If users permissions is 0, filter the documents by user id
+        $groupedDocuments = $documents->flatMap(function ($group) {
+            return $group;
+        });
+        
         if ($user->permissions === 0) {
-            $documents = $documents->filter(function($document) use ($user) {
-                return $document->user_id == $user->id;
+            Log::info('Todos los documentos:', $groupedDocuments->toArray());
+            $groupedDocuments = $groupedDocuments->filter(function($document) use ($user) {
+                return $document->user_id === $user->id;
             });
         }
-    
-        return response()->json($documents);
+
+        $groupedDocuments = $groupedDocuments->map(function($document) {
+            unset($document->user_id); 
+            return $document;
+        });
+
+
+        return response()->json($groupedDocuments);
     }
 
-    public function showJson(String $id)
-    {
-        $document = Document::findOrFail($id);
+    public function show(String $id)
+{
+    $document = Document::with('user')->findOrFail($id);
 
-        return response()->json($document);
-    }
+    $document->username = $document->user->name;
+    unset($document->user_id);
+
+    return response()->json($document);
+}
 
     public function stats(){
         // Get all documents active
