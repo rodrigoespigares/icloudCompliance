@@ -1,13 +1,22 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTable, Column } from 'react-table';
-import { Document, DashboardProps } from '@/types';
+import { Document, DashboardProps, User } from '@/types';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { Icon } from '@iconify/react';
 import FilterMenu from '@/Layouts/FilterMenu';
 import CreateDocumentModal from '@/Layouts/CreateDocumentModal';
+import Loading from './Loading';
 
 export default function Dashboard({ documents = [], permissions = [] }: DashboardProps) {
+    const params = new URLSearchParams(location.search);
+    const paramValue = params.get('login');
+
+    if (paramValue) {
+        window.location.href = '/';
+        return <Loading></Loading>;
+    }
+
     const csrfToken = document
     .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
     ?.getAttribute('content');
@@ -15,12 +24,14 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
     const headers: HeadersInit = csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {};
     useEffect(() => {
         getDocuments();
-    }, []);
+    }, []); 
 
     
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showApproveModal, setShowApproveModal] = useState(false);
+    const [showModalDetail, setShowModalDetail] = useState(false);
+    const [userList, setUserList] = useState<User[]>([]);
     const [appliedFilters, setAppliedFilters] = useState<{
         name?: string;
         priority?: number;
@@ -75,14 +86,19 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
     };
 
     const getDocuments = () => {
-        
-        fetch("/documents", {
+        fetch("/documents/relevance", {
             method: "GET",
             headers
         })
             .then((response) => response.json())
             .then((data) => {
-                setDocumentList(data); 
+                const documentsArray = Object.values(data) as Document[];
+    
+                const sortedDocuments = documentsArray.sort((a, b) => {
+                    return b.priority - a.priority;
+                });
+    
+                setDocumentList(sortedDocuments); 
             })
             .catch((error) => {
                 console.error("Error al obtener los documentos:", error);
@@ -96,20 +112,16 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                 accessor: 'name',
             },
             {
-                Header: 'Descripción',
-                accessor: 'description',
-            },
-            {
                 Header: 'Prioridad',
                 accessor: 'priority',
                 Cell: ({ value }: { value: number }) => {
                     switch (value) {
                         case 1:
-                            return 'Baja';
+                            return (<span className='text-green-600'>Baja </span>);
                         case 2:
-                            return 'Media';
+                            return (<span className='text-yellow-600'>Media </span>);
                         case 3:
-                            return 'Alta';
+                            return (<span className='text-red-600'>Alta </span>);
                         default:
                             return 'Desconocida';
                     }
@@ -132,9 +144,9 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                 Cell: ({ row }) => (
                     <div className="flex space-x-4">
                         {permissions.includes('can_see') && (
-                            <a href={route('view-pdf', row.original.id)} className="text-primary hover:underline text-lg" target="_blank" rel="noopener noreferrer">
+                            <button onClick={() => { handleDetail(row.original) }} className="text-primary hover:underline text-lg" rel="noopener noreferrer">
                                 <Icon icon="bx:show" />
-                            </a>
+                            </button>
                         )}
                         {permissions.includes('can_edit') && (
                             <button
@@ -184,13 +196,50 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
     };
 
     const handleEdit = (document: Document) => {
-        setSelectedDocument(document); 
-        setShowCreateDocumentModal(true); 
+        if (!document.detail) {
+            console.error("Detail URL no está definido");
+            return;
+        }
+    
+        fetch(document.detail)
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((errorData) => {
+                        console.log(errorData);
+                    });
+                } else {
+                    response.json().then((data) => {
+                        setSelectedDocument(data);
+                        setShowCreateDocumentModal(true);
+                    });
+                }
+            });
     };
 
     const handleCreate = () => {
         setSelectedDocument(null); 
         setShowCreateDocumentModal(true); 
+    };
+    
+    const handleDetail = (document: Document) => {
+        if (!document.detail) {
+            console.error("Detail URL no está definido");
+            return;
+        }
+        
+        fetch(document.detail)
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then((errorData) => {
+                        console.log(errorData);
+                    });
+                } else {
+                    response.json().then((data) => {
+                        setSelectedDocument(data);
+                        setShowModalDetail(true);
+                    });
+                }
+            });
     };
 
     const approveDocument = (id: number) => {
@@ -323,6 +372,51 @@ export default function Dashboard({ documents = [], permissions = [] }: Dashboar
                         <div className='flex justify-evenly items-center'>
                             <button className='w-24 text-white rounded-md bg-red-500' onClick={() => setShowApproveModal(false)}>No</button>
                             <button className='w-24 text-white rounded-md bg-green-600' onClick={() => approveDocument(selectedDocument.id)}>Sí</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showModalDetail && selectedDocument && (
+                <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50' onClick={() => setShowModalDetail(false)}>
+                    <div className='w-[30vw] bg-white py-2 px-4 transition-opacity duration-300 ease-in-out rounded-lg'>
+                        <div className='flex justify-between items-start'>
+                            <h2 className='mb-4 text-3xl'>Detalle del Documento</h2>
+                            <div className='flex justify-evenly items-center'>
+                                <button className='text-white rounded-md bg-red-500 text-xl' onClick={() => setShowModalDetail(false)}><Icon icon="bx-x" /></button>
+                            </div>
+                        </div>
+                        <div className='flex flex-col justify-evenly items-center gap-2'>
+                            <div className='w-full'>
+                                <b>Nombre:</b> {selectedDocument.name}
+                            </div>
+                            <div className='w-full'>
+                                <b>Descripción:</b> {selectedDocument.description}
+                            </div>
+                            <div className='w-full'>
+                                <b>Prioridad:</b> {selectedDocument.priority === 1 ? 'Baja' : selectedDocument.priority === 2 ? 'Media' : 'Alta'}
+                            </div>
+                            <div className='w-full'>
+                                <b>Fecha de Envío:</b> {new Date(selectedDocument.date_submitted).toLocaleDateString()} 
+                            </div>
+                            <div className='w-full'>
+                                <b>Fecha de Aprobación:</b> {selectedDocument.date_approved ? new Date(selectedDocument.date_approved).toLocaleDateString() : 'No Aprobada'}
+                            </div> 
+                            <div className='w-full'>
+                                <b>Usuario asignado: </b>{ selectedDocument.username }
+                            </div>
+                            <div className='w-full flex flex-col'>
+                                <b>Acciones:</b>
+                                <div className='flex justify-evenly items-center'>
+                                    <a href={route('view-pdf', selectedDocument.id)} className="w-32 text-center bg-primary rounded-md text-white text-decoration-none" target="_blank" rel="noopener noreferrer">Ver documento</a>
+                                    {   permissions.includes('can_delete') && (
+                                        <button className='w-32 text-white rounded-md bg-red-500' onClick={() => handleDelete(selectedDocument)}>Eliminar</button>
+                                    )}
+                                    {selectedDocument.date_approved == null && permissions.includes('can_approve') && (
+                                        <button className='w-32 text-white rounded-md bg-green-600' onClick={() => handleApprove(selectedDocument)}>Aprobar</button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

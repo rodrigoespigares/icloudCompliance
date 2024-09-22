@@ -6,7 +6,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\UserPermission;
 use App\Models\Document;
-use App\Models\User;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +39,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/documents', [DocumentController::class, 'documents'])->name('documents.index');
+    Route::get('documents/relevance', [DocumentController::class, 'index'])->name('documents.Json'); 
+    Route::get('documents/relevance/{id}', [DocumentController::class, 'show'])->name('documents.show');
+    
 
     Route::middleware(UserPermission::class)->group(function () {
 
@@ -48,8 +50,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/documents/{id}', [DocumentController::class, 'update'])->name('documents.update');
         Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
         Route::patch('/documents/{id}', [DocumentController::class, 'approve'])->name('documents.approve');
+        
         Route::get('/users', [UserController::class, 'index']);
-
+        
         Route::get('/view-pdf/{id}', function ($id) {
 
             $document = Document::findOrFail($id);

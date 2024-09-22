@@ -61,7 +61,7 @@ export default function FilterMenu({ isVisible, onFilterChange, handleShowFilter
 
   return (
     <div
-      className={`fixed top-0 right-0 z-100 h-full w-[20vw] bg-gray-800 text-white p-4 transition-opacity duration-300 ease-in-out 
+      className={`fixed top-0 right-0 z-100 h-full w-[20vw] bg-gray-100 text-black p-4 transition-opacity duration-300 ease-in-out shadow-xl 
         ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
     >
       <div className="relative">

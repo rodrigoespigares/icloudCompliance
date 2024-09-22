@@ -12,6 +12,7 @@ interface Document {
     date_approved?: string;
     documents?: File;
     user_id: number;
+    username?: string;
 }
 
 interface CreateDocumentModalProps {
@@ -124,7 +125,6 @@ export default function CreateDocumentModal({
             })
                 .then((response) => {
                     if (!response.ok) {
-                        console.log(response);
                         return response.json().then((errorData) => {
                             console.log(errorData);
                         });
@@ -283,12 +283,11 @@ export default function CreateDocumentModal({
                             <select
                                 id="user_id"
                                 name="user_id"
-                                value={data.user_id}
                                 onChange={handleInputChange}
                                 className="w-full p-2 rounded text-primary"
                             >
                                 {userList.map((user) => (
-                                    <option value={user.id} key={user.id}>
+                                    <option value={user.id} key={user.id} selected={ user.name === documents?.username}>
                                         {user.name}
                                     </option>
                                 ))}
